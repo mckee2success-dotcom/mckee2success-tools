@@ -1,0 +1,1073 @@
+import { useState, useEffect, useRef } from "react";
+
+const ALL_QUESTIONS = [
+  // ── DOMAIN 1: CMMC Framework & Policy ──
+  {
+    id: 1, domain: "CMMC Framework", level: "L2", difficulty: "Medium",
+    question: "Under CMMC 2.0, which regulatory document formally codifies the CMMC program requirements and makes them legally enforceable through the federal acquisition process?",
+    options: [
+      "DFARS 252.204-7012 — Safeguarding Covered Defense Information",
+      "32 CFR Part 170 — Cybersecurity Maturity Model Certification Program",
+      "NIST SP 800-171 Rev 2 — Protecting CUI in Nonfederal Systems",
+      "OMB Circular A-130 — Managing Information as a Strategic Resource"
+    ],
+    correct: 1,
+    explanation: "32 CFR Part 170 is the Final Rule (effective December 16, 2024) that formally establishes the CMMC 2.0 program as a federal regulation. It defines the three CMMC levels, assessment requirements, C3PAO obligations, and the legal framework for enforcement. DFARS 252.204-7012 predates CMMC and requires safeguarding CUI but does not establish the certification program itself. DFARS 252.204-7021 (the companion clause) is what flows CMMC requirements into contracts — but 32 CFR Part 170 is the foundational regulatory authority.",
+    ref: "32 CFR Part 170; DFARS 252.204-7021"
+  },
+  {
+    id: 2, domain: "CMMC Framework", level: "L2", difficulty: "Hard",
+    question: "A company holds a CMMC Level 2 certification from a C3PAO. The certification was issued 18 months ago. What is the maximum validity period, and what happens if a material change occurs to their environment?",
+    options: [
+      "Certifications are permanent once issued; only a failed annual self-attestation triggers reassessment",
+      "Certifications are valid for 3 years; material changes (new systems, major architecture shifts) must be reported to the C3PAO and may require a delta assessment",
+      "Certifications must be renewed annually via self-attestation; C3PAO assessments only occur every 5 years",
+      "Certifications are valid for 1 year and require full reassessment regardless of changes"
+    ],
+    correct: 1,
+    explanation: "Under 32 CFR Part 170, CMMC Level 2 third-party certifications are valid for 3 years from the date of issuance. However, organizations must maintain continuous compliance — material changes to the assessed environment (adding new systems to scope, major network redesigns, M&A activity, new CUI data flows) are not automatically covered by the existing certification. Best practice and emerging C3PAO guidance require reporting significant changes. A delta or gap assessment may be triggered. The annual affirmation requirement also exists: senior officials must annually affirm continued compliance in SPRS, even between triennial assessments.",
+    ref: "32 CFR Part 170.24; CMMC Assessment Process (CAP) v2.0"
+  },
+  {
+    id: 3, domain: "CMMC Framework", level: "L1", difficulty: "Easy",
+    question: "Which of the following BEST describes the primary regulatory driver for CMMC Level 1 compliance?",
+    options: [
+      "NIST SP 800-171 — all 110 practices across 14 domains",
+      "FAR 52.204-21 — Basic Safeguarding of Covered Contractor Information Systems (17 practices)",
+      "DFARS 252.204-7012 — safeguarding of CUI",
+      "NIST SP 800-172 — Enhanced Security Requirements for Critical Programs"
+    ],
+    correct: 1,
+    explanation: "CMMC Level 1 ('Foundational') maps to the 17 basic safeguarding requirements in FAR clause 52.204-21. These protect Federal Contract Information (FCI) — not CUI. The 17 practices cover access control, identification & authentication, media sanitization, physical protection, system & communications protection, and system & information integrity at a basic level. Critically, Level 1 only allows annual self-attestation — no C3PAO is required. Level 2 and above map to NIST SP 800-171 (110 practices for CUI). Level 3 incorporates select NIST SP 800-172 practices.",
+    ref: "FAR 52.204-21; 32 CFR Part 170.14"
+  },
+  // ── DOMAIN 2: Access Control ──
+  {
+    id: 4, domain: "Access Control (AC)", level: "L2", difficulty: "Hard",
+    question: "AC.L2-3.1.12 requires monitoring and controlling remote access sessions. Which technical implementation MOST comprehensively satisfies this requirement?",
+    options: [
+      "Requiring VPN for all remote connections with username/password authentication",
+      "Implementing session recording, idle timeout enforcement, MFA on VPN, privileged session management (PSM) with keystroke logging, and integration with SIEM for anomaly alerting",
+      "Blocking all remote access outside business hours using firewall ACLs",
+      "Using SSL/TLS for all remote connections with certificate-based authentication"
+    ],
+    correct: 1,
+    explanation: "AC.L2-3.1.12 requires MONITORING (visibility into what remote users do) and CONTROLLING (ability to terminate or restrict) remote sessions. A comprehensive implementation includes: (1) MFA on all remote access entry points, (2) Privileged Session Management (PSM) tools like CyberArk, BeyondTrust, or Delinea for admin sessions with full keystroke/screen recording, (3) session timeout enforcement (NIST recommends 15–30 min idle), (4) SIEM integration so anomalous remote activity triggers alerts, and (5) network segmentation preventing remote users from accessing beyond their need-to-know. VPN alone provides transport security but no session-level monitoring — a common gap finding.",
+    ref: "NIST SP 800-171 Rev 2: 3.1.12; NIST SP 800-46 Rev 2"
+  },
+  {
+    id: 5, domain: "Access Control (AC)", level: "L2", difficulty: "Medium",
+    question: "An employee is transferred from the Engineering department (which handles CUI) to Marketing (which does not). Under AC.L2-3.1.1 and AC.L2-3.1.2, what action is REQUIRED?",
+    options: [
+      "No immediate action; access rights are reviewed annually",
+      "The employee's manager must submit a ticket; IT has 30 days to update access",
+      "Access to CUI systems must be revoked promptly to reflect the new role — the principle of least privilege requires access rights be updated to match current job functions",
+      "The employee may retain read-only access to CUI for a 90-day transition period"
+    ],
+    correct: 2,
+    explanation: "AC.L2-3.1.1 requires limiting system access to authorized users, and AC.L2-3.1.2 requires limiting access to the types of transactions users are authorized to perform (least privilege). When a role changes, access must be updated immediately — access should reflect CURRENT job functions, not historical ones. Stale access (also called 'privilege creep' or 'access accumulation') is one of the most common CMMC findings. The fix requires a formal access review process triggered by personnel changes, not just annual reviews. Provisioning workflows in IAM systems (ServiceNow, SailPoint, Saviynt) should auto-trigger access deprovisioning on HR role-change events.",
+    ref: "NIST SP 800-171 Rev 2: 3.1.1, 3.1.2"
+  },
+  // ── DOMAIN 3: Audit & Accountability ──
+  {
+    id: 6, domain: "Audit & Accountability (AU)", level: "L2", difficulty: "Medium",
+    question: "AU.L2-3.3.5 requires correlating audit record review, analysis, and reporting processes. Which technology BEST satisfies this requirement?",
+    options: [
+      "A centralized syslog server (e.g., rsyslog) collecting logs from all systems",
+      "A Security Information and Event Management (SIEM) platform with correlation rules, dashboards, and automated alerting across log sources",
+      "Manual review of individual server event logs by the system administrator weekly",
+      "Network flow monitoring (NetFlow/IPFIX) to detect anomalous traffic patterns"
+    ],
+    correct: 1,
+    explanation: "AU.L2-3.3.5 goes beyond log collection — it requires CORRELATION across audit sources. A SIEM (e.g., Splunk, Microsoft Sentinel, IBM QRadar, Elastic SIEM) is purpose-built for this: it ingests logs from endpoints, network devices, cloud platforms, identity providers, and applications, then applies correlation rules to detect patterns that no single log source would reveal (e.g., failed logins on AD + successful VPN auth from a foreign IP + large file transfer). A raw syslog server satisfies AU.L2-3.3.1 (collection) but not 3.3.5 (correlation). Manual review is insufficient scale. SIEM also provides the reporting capability required and the audit trail for assessors.",
+    ref: "NIST SP 800-171 Rev 2: 3.3.5; NIST SP 800-92"
+  },
+  {
+    id: 7, domain: "Audit & Accountability (AU)", level: "L2", difficulty: "Hard",
+    question: "Which specific user actions are explicitly required to be auditable under NIST SP 800-171 AU.L2-3.3.1?",
+    options: [
+      "Only privileged user actions and system administrator commands",
+      "Failed login attempts only, to avoid excessive storage consumption",
+      "Sufficient detail to reconstruct events: who, what, when, where — including successful/failed logins, object access, privilege use, policy changes, and process execution",
+      "Network traffic metadata (source IP, destination IP, port) for all connections"
+    ],
+    correct: 2,
+    explanation: "AU.L2-3.3.1 requires creating and retaining audit logs that enable MONITORING, ANALYSIS, INVESTIGATION, and REPORTING. Per NIST SP 800-92 and the CMMC Assessment Guide, the minimum auditable event categories include: (1) logon/logoff events (success and failure), (2) object access (file opens, reads, writes on CUI), (3) privilege escalation and use, (4) account management changes, (5) policy modifications, (6) process creation/termination, (7) network connection events. Each record must capture: timestamp, event type, user identity, source/destination, success/failure indicator, and system identity. Assessors will pull sample audit logs and verify these fields exist and are populated.",
+    ref: "NIST SP 800-171 Rev 2: 3.3.1; NIST SP 800-92"
+  },
+  // ── DOMAIN 4: Configuration Management ──
+  {
+    id: 8, domain: "Configuration Management (CM)", level: "L2", difficulty: "Hard",
+    question: "CM.L2-3.4.2 requires establishing and maintaining baseline configurations. When a new server is deployed in the CUI environment, what process MUST occur before it goes into production?",
+    options: [
+      "The server must receive a security scan within 90 days of deployment",
+      "The server must be configured to the approved baseline (hardened configuration) before connecting to the CUI network, with deviations documented and approved through a formal change management process",
+      "The server owner must email the security team describing the configuration",
+      "Standard OS installation with automatic updates enabled satisfies baseline requirements"
+    ],
+    correct: 1,
+    explanation: "CM.L2-3.4.2 requires ESTABLISHING and MAINTAINING baseline configurations — not just having them documented. For a new server, this means: (1) applying the approved STIG or CIS Benchmark configuration BEFORE production deployment, (2) running a compliance scan (e.g., Tenable SC, CIS-CAT) to verify the baseline is applied, (3) documenting any deviations with formal approval through the change management process (CM.L2-3.4.3), and (4) updating the asset inventory (CM.L2-3.4.1). 'Configuration as Code' using tools like Ansible, Chef, or Puppet helps enforce baselines consistently. Deploying with default configurations and patching later is a common violation.",
+    ref: "NIST SP 800-171 Rev 2: 3.4.2; DISA STIGs; CIS Benchmarks"
+  },
+  {
+    id: 9, domain: "Configuration Management (CM)", level: "L2", difficulty: "Medium",
+    question: "CM.L2-3.4.9 requires controlling and monitoring user-installed software. Which control mechanism BEST satisfies this at the technical layer?",
+    options: [
+      "An acceptable use policy prohibiting unauthorized software installations",
+      "Removing local administrator rights from all standard users and deploying application whitelisting (allow-listing) via tools like AppLocker, WDAC, or Ivanti Application Control",
+      "Monthly scans using an asset discovery tool to identify new software",
+      "Requiring users to submit a helpdesk ticket before installing any software"
+    ],
+    correct: 1,
+    explanation: "CM.L2-3.4.9 requires both CONTROLLING (preventing) and MONITORING (detecting) unauthorized software. The gold standard is layered: (1) Remove local admin rights so users cannot install software — this is the most effective preventive control. (2) Deploy application allow-listing (Microsoft WDAC/AppLocker, Ivanti, Carbon Black App Control) that blocks execution of anything not on the approved list, even if installed via other means. (3) Software inventory tools (Tanium, SCCM, Qualys) provide monitoring/detection. Policy alone (AUP) is an administrative control and insufficient by itself — assessors will look for technical enforcement. The combination of no-admin + allow-listing is the technically defensible answer.",
+    ref: "NIST SP 800-171 Rev 2: 3.4.9; NIST SP 800-167"
+  },
+  // ── DOMAIN 5: Identification & Authentication ──
+  {
+    id: 10, domain: "Identification & Authentication (IA)", level: "L2", difficulty: "Medium",
+    question: "IA.L2-3.5.10 requires storing and transmitting only cryptographically-protected passwords. What storage method is COMPLIANT under this requirement?",
+    options: [
+      "Base64 encoding of plaintext passwords in the database",
+      "Symmetric AES-256 encryption of passwords with a stored key",
+      "Salted hashing using FIPS-approved algorithms (e.g., PBKDF2-HMAC-SHA256, bcrypt with SHA-512 backend, Argon2) — the hash is irreversible and unique per password instance",
+      "MD5 hashing of passwords for legacy application compatibility"
+    ],
+    correct: 2,
+    explanation: "IA.L2-3.5.10 requires 'cryptographically protected' passwords, which per NIST SP 800-63B means one-way salted hashing — NOT reversible encryption. Key requirements: (1) Use adaptive hashing algorithms designed for passwords: PBKDF2 (FIPS-approved), bcrypt, scrypt, or Argon2. (2) Apply a unique random SALT per password to prevent rainbow table attacks. (3) Use sufficient iteration count (PBKDF2: minimum 600,000 iterations per NIST 800-63B 2024 update). MD5 and SHA-1 are cryptographically broken for this purpose. Base64 is encoding, not encryption. AES encryption is reversible — if the key is compromised, all passwords are exposed. NIST SP 800-63B §5.1.1 provides the authoritative password storage guidance.",
+    ref: "NIST SP 800-171 Rev 2: 3.5.10; NIST SP 800-63B §5.1.1"
+  },
+  {
+    id: 11, domain: "Identification & Authentication (IA)", level: "L2", difficulty: "Hard",
+    question: "IA.L2-3.5.7 mandates minimum password complexity requirements. Which password policy BEST aligns with current NIST SP 800-63B guidance while satisfying CMMC?",
+    options: [
+      "Minimum 8 characters, uppercase + lowercase + number + special character, changed every 90 days",
+      "Minimum 12 characters, no mandatory complexity rules, check against known-breached password lists (e.g., HaveIBeenPwned), change only upon evidence of compromise — no periodic forced rotation",
+      "Minimum 6 characters with complexity, changed every 30 days for privileged accounts",
+      "Passphrase of exactly 4 random dictionary words with no character restrictions"
+    ],
+    correct: 1,
+    explanation: "This is a nuanced question. NIST SP 800-63B (the current authoritative guidance) actually DEPRECATED mandatory periodic password rotation and mandatory complexity rules in 2017 updates, because they lead to predictable patterns (Password1! → Password2!). Current NIST guidance: (1) Minimum 8 characters (NIST); many assessors and DISA STIGs require 15 characters for DoD. (2) Screen against breached password lists at creation. (3) No mandatory rotation UNLESS evidence of compromise. (4) Allow all printable ASCII including spaces (enable passphrases). However, CMMC assessors applying DISA STIGs may still require 15-char minimum and complexity. The technically CORRECT answer per NIST 800-63B is option B, but organizations should verify specific STIG requirements for their environment.",
+    ref: "NIST SP 800-171 Rev 2: 3.5.7; NIST SP 800-63B §5.1.1; DISA Password STIG"
+  },
+  // ── DOMAIN 6: Incident Response ──
+  {
+    id: 12, domain: "Incident Response (IR)", level: "L2", difficulty: "Medium",
+    question: "IR.L2-3.6.2 requires tracking, documenting, and reporting incidents. When a CMMC-covered contractor experiences a reportable cyber incident, which portal MUST be used for DoD notification?",
+    options: [
+      "CISA's Cyber Incident Reporting portal (CIRCIA)",
+      "DIBNet Portal (dibnet.dod.mil) — with a completed DD Form 1494",
+      "DIBNet Portal (dibnet.dod.mil) — within 72 hours of discovery using the cyber incident reporting mechanism",
+      "Directly emailing the Contracting Officer with a written incident report"
+    ],
+    correct: 2,
+    explanation: "DFARS 252.204-7012(c) requires reporting cyber incidents to DoD within 72 hours through the DIBNet portal (https://dibnet.dod.mil). The report must include: company CAGE code, contract numbers, facility CLEARANCE level, systems affected (by IP and hostname), incident methodology (attack vector), and any malicious code indicators (hashes). Additionally: (1) The contractor must preserve media images for 90 days and make them available to DoD upon request. (2) Malicious code must be submitted to DC3 (DoD Cyber Crime Center). (3) The contractor must notify subcontractors if they are also affected. DIBNet is the ONLY authorized portal — CISA reporting may be required separately under CIRCIA but does NOT satisfy the DFARS requirement.",
+    ref: "DFARS 252.204-7012(c)(1)-(3); NIST SP 800-171 Rev 2: 3.6.2"
+  },
+  {
+    id: 13, domain: "Incident Response (IR)", level: "L2", difficulty: "Hard",
+    question: "During a CMMC assessment, the assessor asks to review incident response test records. The organization has a documented IR plan but has never conducted a tabletop exercise or simulation. Which practices are VIOLATED?",
+    options: [
+      "Only IR.L2-3.6.1 — having a plan is sufficient for CMMC Level 2",
+      "IR.L2-3.6.3 — which requires testing the incident response capability, in addition to IR.L2-3.6.1 for the plan itself",
+      "Only AU.L2-3.3.1 — logging deficiencies are the real problem",
+      "No violation — tabletop exercises are only required for CMMC Level 3"
+    ],
+    correct: 1,
+    explanation: "IR.L2-3.6.3 explicitly requires TESTING the incident response capability. 'Testing' in NIST 800-171A terms means verifying the IR plan works through: tabletop exercises (discussion-based walk-through of scenarios), functional exercises (simulated incidents with actual system response), or full-scale drills. Having a documented plan (IR.L2-3.6.1) but never testing it is a separate finding. Assessors will ask for evidence of testing: meeting minutes, after-action reports, exercise logs with dates and participants, and documented lessons learned. Annual testing is the minimum accepted cadence. NIST SP 800-84 provides guidance on IR exercise types.",
+    ref: "NIST SP 800-171 Rev 2: 3.6.1, 3.6.3; NIST SP 800-84; NIST SP 800-61 Rev 2"
+  },
+  // ── DOMAIN 7: Maintenance ──
+  {
+    id: 14, domain: "Maintenance (MA)", level: "L2", difficulty: "Medium",
+    question: "MA.L2-3.7.5 requires multi-factor authentication for remote maintenance sessions. A vendor needs remote access to perform emergency maintenance on a CUI-processing server at 2 AM. What is REQUIRED?",
+    options: [
+      "The vendor may use username/password since it's an emergency situation; MFA can be waived",
+      "MFA must be enforced for the remote maintenance session AND the session must be monitored or supervised; vendor access must be terminated when maintenance is complete",
+      "The vendor must be on-site; remote maintenance on CUI systems is never permitted",
+      "MFA is only required for internal employees, not third-party vendors"
+    ],
+    correct: 1,
+    explanation: "MA.L2-3.7.5 mandates MFA for ALL remote maintenance sessions — no emergency exceptions. Additionally, MA.L2-3.7.2 requires supervision or monitoring of maintenance activities by personnel who have full system access authorization. In practice this means: (1) Vendor authenticates via MFA (hardware token, authenticator app, or PIV card), (2) A privileged session management tool records the session (keystroke + screen), (3) An authorized internal employee monitors the session in real-time OR reviews recording post-session, (4) Access is immediately terminated via account deprovisioning or session termination when maintenance ends. Creating shared/generic maintenance accounts to avoid MFA is a critical finding.",
+    ref: "NIST SP 800-171 Rev 2: 3.7.2, 3.7.5"
+  },
+  // ── DOMAIN 8: Media Protection ──
+  {
+    id: 15, domain: "Media Protection (MP)", level: "L2", difficulty: "Hard",
+    question: "MP.L2-3.8.2 requires limiting access to CUI on digital and non-digital media to authorized users. An employee prints a document containing CUI and leaves it on a shared printer. Which practices are violated?",
+    options: [
+      "No violation — printed documents are not covered by CMMC",
+      "MP.L2-3.8.2 (media access control) and PE.L1-3.10.1 (physical access to systems/media); both digital AND physical (paper) media containing CUI require access controls",
+      "Only PE.L1-3.10.1 since this is a physical security issue",
+      "AT.L2-3.2.1 only — this is a user awareness training failure"
+    ],
+    correct: 1,
+    explanation: "NIST SP 800-171 defines 'media' broadly to include both digital media (USB drives, hard drives, optical disks) AND non-digital media (paper, film). Leaving printed CUI unattended on a shared printer violates: (1) MP.L2-3.8.2 — only authorized users should have access to CUI media, and unattended printing removes that control. (2) PE.L1-3.10.1 — physical access to CUI (including on paper) must be controlled. Controls for paper CUI include: secure print release (pull printing requiring badge swipe at the printer), clean desk policy enforcement, CUI cover sheets, locked storage when unattended, and cross-cut shredding at end of life (MP.L2-3.8.3).",
+    ref: "NIST SP 800-171 Rev 2: 3.8.2, 3.10.1; 32 CFR Part 2002"
+  },
+  // ── DOMAIN 9: Personnel Security ──
+  {
+    id: 16, domain: "Personnel Security (PS)", level: "L2", difficulty: "Easy",
+    question: "PS.L2-3.9.1 requires screening individuals prior to authorizing access to organizational systems. What is the MINIMUM screening requirement implied by this practice?",
+    options: [
+      "A polygraph examination for all personnel",
+      "A government security clearance (Secret or above) for anyone touching CUI systems",
+      "Position-appropriate personnel screening (e.g., background check, verification of credentials, references) BEFORE granting system access — specific criteria defined by organizational policy commensurate with risk",
+      "A social media review and criminal background check for privileged users only"
+    ],
+    correct: 2,
+    explanation: "PS.L2-3.9.1 requires screening commensurate with the risk of the position — it does NOT mandate specific clearance levels or polygraphs (those are separate security program requirements). The requirement is that screening occurs BEFORE access is granted, not after. In practice for a DIB contractor: (1) Criminal background check for all personnel with CUI access, (2) Employment and education verification, (3) Credit check for positions with financial responsibility, (4) Reference checks. For personnel who will have privileged access, screening should be more rigorous. Importantly, screening must also be repeated periodically for high-risk positions. Organizations must document their screening criteria and demonstrate records of completion to assessors.",
+    ref: "NIST SP 800-171 Rev 2: 3.9.1; NIST SP 800-53 PS-3"
+  },
+  // ── DOMAIN 10: Risk Assessment ──
+  {
+    id: 17, domain: "Risk Assessment (RA)", level: "L2", difficulty: "Hard",
+    question: "RA.L2-3.11.3 requires remediating vulnerabilities in accordance with risk assessments. A scan reveals a critical CVE (CVSS 9.8) on a CUI server, but patching will require a 4-hour maintenance window that the business wants to delay for 60 days. What is the CORRECT approach?",
+    options: [
+      "Document the exception in the POA&M and patch at the next convenient window",
+      "Apply compensating controls immediately (network isolation, WAF rule, IDS signature) to reduce exploitability, document the risk acceptance with a time-bound plan, AND establish an aggressive patch timeline — critical CVEs typically require remediation within 15–30 days under DoD guidance",
+      "Defer patching indefinitely since the business impact outweighs the security risk",
+      "Report the vulnerability to the Contracting Officer within 24 hours"
+    ],
+    correct: 1,
+    explanation: "RA.L2-3.11.3 requires remediating vulnerabilities 'in accordance with risk assessments' — but DoD context adds specificity. CISA KEV (Known Exploited Vulnerabilities) catalog requires remediation within 15 days for federal systems. DISA guidance for DoD contractors maps CVSS to patch timelines: Critical (9.0-10.0): 15-21 days; High (7.0-8.9): 30 days; Medium: 60-90 days. A 60-day delay on a CVSS 9.8 is likely non-compliant without compensating controls. The correct approach: (1) Immediately apply compensating controls (isolate system, block inbound vectors at firewall/WAF, add IDS rules), (2) Formally document risk acceptance with specific remediation date, (3) Escalate to obtain emergency change approval. Unmitigated critical CVEs are high-severity findings.",
+    ref: "NIST SP 800-171 Rev 2: 3.11.3; CISA KEV; DISA STIG timelines"
+  },
+  // ── DOMAIN 11: System & Communications Protection ──
+  {
+    id: 18, domain: "System & Comms Protection (SC)", level: "L2", difficulty: "Hard",
+    question: "SC.L2-3.13.6 requires denying network communications traffic by default (deny-all, permit-by-exception). An organization has a perimeter firewall with a 'permit any any' outbound rule. What is the security implication and required fix?",
+    options: [
+      "No issue — outbound traffic is inherently safe since it originates internally",
+      "The 'permit any any' rule violates the deny-by-default principle; it enables C2 beaconing, data exfiltration, and lateral movement — replace with explicit allow rules for known-good destinations (approved services, ports, protocols) and deny/log everything else",
+      "Only inbound rules require deny-by-default; outbound can remain open",
+      "The fix is to add a NGFW with IPS to inspect traffic, while keeping the permit-any rule"
+    ],
+    correct: 1,
+    explanation: "SC.L2-3.13.6 requires deny-all, permit-by-exception for BOTH inbound AND outbound traffic. A 'permit any any' outbound rule is a critical misconfiguration enabling: (1) C2 (command-and-control) beaconing — malware can freely communicate with attacker infrastructure, (2) Data exfiltration — CUI can be uploaded to any internet destination, (3) Malware updates — ransomware can fetch payloads. Required fix: Implement explicit outbound allow rules limited to business-necessary destinations (Office 365 IPs, approved SaaS, DNS servers). Log all denied outbound attempts to SIEM. Implement DNS filtering (Cisco Umbrella, Zscaler) to block C2 domains. This is frequently a high-severity finding in CMMC assessments.",
+    ref: "NIST SP 800-171 Rev 2: 3.13.6; NIST SP 800-41 Rev 1"
+  },
+  {
+    id: 19, domain: "System & Comms Protection (SC)", level: "L2", difficulty: "Medium",
+    question: "SC.L2-3.13.16 requires protecting the authenticity of communications sessions. Which protocols and mechanisms satisfy this requirement?",
+    options: [
+      "HTTP with Basic Authentication over the corporate intranet",
+      "TLS 1.2 or 1.3 with FIPS 140-2 validated modules, mutual TLS (mTLS) for service-to-service, and HTTPS Strict Transport Security (HSTS) — ensuring both encryption and cryptographic authenticity of sessions",
+      "IPSec in transport mode for internal traffic only",
+      "SSH with password authentication for administrative sessions"
+    ],
+    correct: 1,
+    explanation: "SC.L2-3.13.16 requires protecting SESSION AUTHENTICITY — preventing injection, replay, and man-in-the-middle attacks on active sessions. Mechanisms include: (1) TLS 1.2/1.3 with FIPS-validated cryptographic modules (OpenSSL FIPS mode, Microsoft SChannel) — provides both encryption AND authentication via certificates. (2) Mutual TLS (mTLS) for internal API and service-to-service communication — both sides present certificates. (3) HSTS (HTTP Strict Transport Security) prevents protocol downgrade attacks. (4) Session tokens with proper entropy, short expiry, and HttpOnly/Secure flags for web applications. HTTP with any auth method is non-compliant. SSH with password auth lacks certificate-based authenticity. TLS 1.0/1.1 must be disabled.",
+    ref: "NIST SP 800-171 Rev 2: 3.13.16; NIST SP 800-52 Rev 2; FIPS 140-2"
+  },
+  // ── DOMAIN 12: System & Information Integrity ──
+  {
+    id: 20, domain: "System & Info Integrity (SI)", level: "L2", difficulty: "Medium",
+    question: "SI.L2-3.14.6 requires monitoring organizational systems to detect attacks and indicators of potential attacks. Which monitoring approach provides the MOST comprehensive coverage for a CUI environment?",
+    options: [
+      "Weekly vulnerability scans using Nessus or Qualys",
+      "Perimeter IDS/IPS sensors only, monitoring inbound traffic",
+      "Defense-in-depth monitoring: EDR on all endpoints (behavioral + IOC detection), network IDS/IPS (east-west + perimeter), DNS monitoring, UEBA (User/Entity Behavior Analytics), integrated into SIEM with 24/7 alerting",
+      "Reviewing Windows Event Logs manually on a monthly basis"
+    ],
+    correct: 2,
+    explanation: "SI.L2-3.14.6 requires detecting attacks AND indicators of potential attacks — implying both signature-based and behavioral detection. Modern threat actors use living-off-the-land techniques that bypass signature detection. A comprehensive approach requires: (1) EDR (CrowdStrike, SentinelOne, Microsoft Defender for Endpoint) — behavioral detection, process monitoring, memory scanning on endpoints. (2) Network IDS/IPS covering east-west (lateral movement) not just north-south (perimeter). (3) DNS monitoring — C2 channels frequently use DNS. (4) UEBA — detecting behavioral anomalies (user logging in at unusual hours, bulk file downloads). (5) All feeds correlating in SIEM for holistic visibility. Perimeter-only IDS misses 80%+ of attacks after initial compromise.",
+    ref: "NIST SP 800-171 Rev 2: 3.14.6; NIST SP 800-94"
+  },
+  // ── DOMAIN 13: Assessment & Authorization ──
+  {
+    id: 21, domain: "Assessment Process", level: "L2", difficulty: "Hard",
+    question: "During a C3PAO assessment, an assessor uses all three NIST SP 800-171A assessment methods. Which combination CORRECTLY maps to the three methods?",
+    options: [
+      "Scan, Pentest, Interview",
+      "Examine (documentation/records), Interview (personnel), Test (technical verification/demonstration)",
+      "Audit, Monitor, Remediate",
+      "Review, Validate, Certify"
+    ],
+    correct: 1,
+    explanation: "NIST SP 800-171A defines exactly three assessment methods used by C3PAOs: (1) EXAMINE — reviewing documentation, policies, procedures, configurations, system designs, architecture diagrams, audit logs, and records. Examples: reviewing the System Security Plan (SSP), incident response plan, access control policies, firewall rule sets. (2) INTERVIEW — discussions with system owners, administrators, end users, security personnel to verify understanding and implementation. (3) TEST — technical verification through hands-on demonstration, tool outputs, penetration testing, configuration checks, and functional testing. Per CAP v2.0, assessors must apply all three methods where applicable. A practice with only documentation but no technical verification would not be scored MET by a rigorous assessor.",
+    ref: "NIST SP 800-171A; CMMC Assessment Process (CAP) v2.0"
+  },
+  {
+    id: 22, domain: "Assessment Process", level: "L2", difficulty: "Hard",
+    question: "What is a 'System Security Plan (SSP)' in the CMMC context, and what is the consequence of not having one?",
+    options: [
+      "An SSP is optional documentation; assessors focus on technical controls, not paperwork",
+      "An SSP is a required artifact under NIST SP 800-171 3.12.4 that describes the system boundary, CUI categories, security requirements, and implementation status. Without it, ALL 110 practices would be scored NOT MET by default since there is no documented basis for the assessment",
+      "An SSP is required only for CMMC Level 3 and above",
+      "An SSP is the same as a POA&M and is only needed when practices are not implemented"
+    ],
+    correct: 1,
+    explanation: "NIST SP 800-171 Rev 2 requirement 3.12.4 explicitly requires a System Security Plan describing: (1) the system boundary (what's in scope), (2) operational environment, (3) system interconnections, (4) CUI categories processed, and (5) how each of the 110 security requirements is implemented or planned. The SSP is THE foundational assessment artifact — it's what the EXAMINE method reviews first. Without an SSP, an assessor has no baseline to assess against, and ALL practices default to NOT MET because there is no documented implementation evidence. The SSP must be kept current (version controlled), reviewed at least annually, and updated when the system changes. An outdated SSP that doesn't match the actual system is nearly as bad as no SSP.",
+    ref: "NIST SP 800-171 Rev 2: 3.12.4; CMMC Assessment Process (CAP) v2.0"
+  },
+  // ── DOMAIN 14: Supply Chain ──
+  {
+    id: 23, domain: "Supply Chain (SR)", level: "L2", difficulty: "Medium",
+    question: "A prime contractor uses a cloud-based project management SaaS tool where project managers upload technical documents that may contain CUI. What CMMC obligation applies to the SaaS provider?",
+    options: [
+      "None — cloud services are excluded from CMMC requirements",
+      "The SaaS provider handling CUI must meet the same CMMC level as the prime, OR the prime must ensure the service is covered by a FedRAMP authorization at the appropriate level or equivalent DoD authorization",
+      "The prime only needs to notify the SaaS provider that they process CUI; no certification is required",
+      "The SaaS provider must complete CMMC Level 1 self-attestation only"
+    ],
+    correct: 1,
+    explanation: "When CUI is processed by an external cloud service, the cloud provider becomes part of the CUI boundary and must be covered. Options for compliance: (1) The SaaS provider obtains their own CMMC certification at the appropriate level — this is flowed down via subcontract per DFARS 252.204-7021. (2) The service operates under a FedRAMP Moderate or High authorization (for systems processing CUI, FedRAMP Moderate is the baseline). (3) DoD-specific cloud authorizations (IL2-IL5) may apply depending on sensitivity. The prime cannot simply 'notify' the provider and assume compliance. Common example: using a non-FedRAMP-authorized SharePoint Online or Google Workspace for CUI is non-compliant. Microsoft 365 Government (GCC High) is FedRAMP High authorized and commonly used.",
+    ref: "DFARS 252.204-7021(c)(4); CMMC Scoping Guide; FedRAMP; NIST SP 800-171 Rev 2: 3.17"
+  },
+  // ── DOMAIN 15: SPRS & Scoring ──
+  {
+    id: 24, domain: "SPRS & Self-Assessment", level: "L2", difficulty: "Hard",
+    question: "Under NIST Handbook 162, what is the significance of 'weighted' practice values in SPRS scoring, and which practice category carries the HIGHEST point deduction when not implemented?",
+    options: [
+      "All 110 practices are worth exactly 1 point each, totaling 110",
+      "Practices are weighted 1–5 points based on security impact; the total score if all practices are met is 110. Access Control and Identification & Authentication practices carry some of the highest weights — a single unimplemented high-weight practice can cost 5 points",
+      "Only the 17 Level 1 practices are weighted; Level 2 adds flat-rate points",
+      "Weighting is determined by the C3PAO during assessment, not predetermined"
+    ],
+    correct: 1,
+    explanation: "NIST Handbook 162 assigns each of the 110 practices a point value from 1 to 5 based on the potential security impact of non-implementation. The perfect score is 110 (all implemented). Unimplemented practices are SUBTRACTED from 110, with higher-weight practices causing larger drops. High-weight (5-point) practices typically include: MFA (IA.L2-3.5.3), CUI encryption in transit (SC.L2-3.13.8), malware protection (SI.L1-3.14.2), and access control fundamentals. A company with zero practices implemented scores -203 (the mathematical minimum). SPRS scores are self-reported under False Claims Act liability. DoD uses SPRS scores for contract award decisions and risk prioritization. C3PAO assessors independently validate and can override self-reported scores.",
+    ref: "NIST Handbook 162; DFARS 252.204-7019; SPRS User Guide"
+  },
+  {
+    id: 25, domain: "SPRS & Self-Assessment", level: "L1", difficulty: "Medium",
+    question: "An organization submits an SPRS score of 88 (self-assessed) but a C3PAO assessment later finds their actual score is 32. What legal risk does the organization face?",
+    options: [
+      "No legal risk — self-assessments are good-faith estimates and are not legally binding",
+      "They may be required to re-assess and resubmit, but no penalties apply",
+      "Potential liability under the False Claims Act (31 U.S.C. § 3729) for submitting a false certification to obtain a government contract — with treble damages (3x the contract value) and potential criminal liability",
+      "The DoD will simply adjust the score and notify the contracting officer; no further action"
+    ],
+    correct: 2,
+    explanation: "Submitting an inflated SPRS score to obtain or maintain a government contract constitutes a false statement under the False Claims Act (FCA). The DoJ has actively pursued CMMC/cybersecurity FCA cases: the 2021 DoJ Civil Cyber-Fraud Initiative explicitly uses FCA to hold contractors accountable for misrepresenting cybersecurity posture. FCA penalties: treble damages (3x the government's loss), plus $13,946–$27,894 per false claim, plus potential criminal charges for knowing fraud. Several high-profile settlements have occurred in the DIB space. The relator (whistleblower) provision allows employees to file qui tam suits and receive 15-30% of recovered funds — creating strong incentives for internal reporting.",
+    ref: "False Claims Act 31 U.S.C. § 3729; DoJ Civil Cyber-Fraud Initiative (Oct 2021)"
+  }
+];
+
+const DOMAINS = ["All Domains", ...Array.from(new Set(ALL_QUESTIONS.map(q => q.domain)))];
+const DIFFICULTIES = ["All Levels", "Easy", "Medium", "Hard"];
+
+const DOMAIN_HUE = {
+  "CMMC Framework": 200,
+  "Access Control (AC)": 15,
+  "Audit & Accountability (AU)": 270,
+  "Configuration Management (CM)": 140,
+  "Identification & Authentication (IA)": 45,
+  "Incident Response (IR)": 0,
+  "Maintenance (MA)": 180,
+  "Media Protection (MP)": 30,
+  "Personnel Security (PS)": 320,
+  "Risk Assessment (RA)": 190,
+  "System & Comms Protection (SC)": 250,
+  "System & Info Integrity (SI)": 160,
+  "Assessment Process": 220,
+  "Supply Chain (SR)": 350,
+  "SPRS & Self-Assessment": 60,
+};
+
+function hsl(h, s, l) { return `hsl(${h},${s}%,${l}%)`; }
+
+export default function CMMCTest() {
+  const [domainFilter, setDomainFilter] = useState("All Domains");
+  const [diffFilter, setDiffFilter] = useState("All Levels");
+  const [qIndex, setQIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [answers, setAnswers] = useState({});
+  const [flagged, setFlagged] = useState(new Set());
+  const [showResults, setShowResults] = useState(false);
+  const [tab, setTab] = useState("test"); // test | map | results
+  const topRef = useRef(null);
+
+  const filtered = ALL_QUESTIONS.filter(q =>
+    (domainFilter === "All Domains" || q.domain === domainFilter) &&
+    (diffFilter === "All Levels" || q.difficulty === diffFilter)
+  );
+
+  const q = filtered[qIndex] || filtered[0];
+  const hue = q ? DOMAIN_HUE[q.domain] || 200 : 200;
+  const totalAnswered = Object.keys(answers).length;
+  const totalCorrect = Object.entries(answers).filter(([id, ans]) => {
+    const question = ALL_QUESTIONS.find(q => q.id === parseInt(id));
+    return question && question.correct === ans;
+  }).length;
+  const pct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : null;
+
+  useEffect(() => {
+    setQIndex(0);
+    setSelected(null);
+    setRevealed(false);
+  }, [domainFilter, diffFilter]);
+
+  function goTo(idx) {
+    setQIndex(idx);
+    const existing = answers[filtered[idx]?.id];
+    setSelected(existing !== undefined ? existing : null);
+    setRevealed(existing !== undefined);
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function handleSelect(idx) {
+    if (revealed) return;
+    setSelected(idx);
+  }
+
+  function handleSubmit() {
+    if (selected === null) return;
+    setRevealed(true);
+    setAnswers(prev => ({ ...prev, [q.id]: selected }));
+  }
+
+  function handleNext() {
+    if (qIndex < filtered.length - 1) goTo(qIndex + 1);
+  }
+
+  function handlePrev() {
+    if (qIndex > 0) goTo(qIndex - 1);
+  }
+
+  function toggleFlag() {
+    setFlagged(prev => {
+      const n = new Set(prev);
+      n.has(q?.id) ? n.delete(q?.id) : n.add(q?.id);
+      return n;
+    });
+  }
+
+  const S = {
+    root: {
+      minHeight: "100vh",
+      background: "#07090f",
+      color: "#c8d6e8",
+      fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+      fontSize: "13px",
+    },
+    topBar: {
+      background: "rgba(7,9,15,0.95)",
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      padding: "0 24px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      height: "52px",
+      position: "sticky",
+      top: 0,
+      zIndex: 100,
+      backdropFilter: "blur(16px)",
+    },
+    brand: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+    },
+    brandIcon: {
+      width: "28px", height: "28px",
+      background: `linear-gradient(135deg, ${hsl(hue,80,55)}, ${hsl(hue+30,70,45)})`,
+      borderRadius: "6px",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: "14px",
+      transition: "background 0.4s",
+    },
+    brandText: {
+      fontSize: "11px",
+      fontWeight: "700",
+      letterSpacing: "0.2em",
+      textTransform: "uppercase",
+      color: "#e2ecf8",
+    },
+    brandSub: { fontSize: "9px", color: "#3a5070", letterSpacing: "0.12em", marginTop: "1px" },
+    scoreBar: {
+      display: "flex",
+      alignItems: "center",
+      gap: "20px",
+      fontSize: "11px",
+    },
+    scoreItem: { textAlign: "center" },
+    scoreVal: (c) => ({
+      fontSize: "16px",
+      fontWeight: "700",
+      color: c,
+      lineHeight: 1,
+    }),
+    scoreLbl: { color: "#2a4060", fontSize: "9px", letterSpacing: "0.1em", marginTop: "2px" },
+    divider: { width: "1px", height: "30px", background: "rgba(255,255,255,0.06)" },
+    tabs: {
+      display: "flex",
+      gap: "2px",
+      background: "rgba(255,255,255,0.03)",
+      padding: "3px",
+      borderRadius: "8px",
+    },
+    tab: (active) => ({
+      padding: "5px 14px",
+      borderRadius: "6px",
+      background: active ? "rgba(255,255,255,0.08)" : "transparent",
+      color: active ? "#e2ecf8" : "#3a5070",
+      fontSize: "10px",
+      fontWeight: "600",
+      letterSpacing: "0.1em",
+      textTransform: "uppercase",
+      cursor: "pointer",
+      border: "none",
+      transition: "all 0.15s",
+    }),
+    body: {
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "20px 20px",
+      display: "grid",
+      gridTemplateColumns: "220px 1fr",
+      gap: "20px",
+    },
+    sidebar: { position: "sticky", top: "72px", alignSelf: "start" },
+    sideSection: {
+      background: "#0d1220",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: "10px",
+      padding: "14px",
+      marginBottom: "12px",
+    },
+    sideLabel: {
+      fontSize: "9px",
+      letterSpacing: "0.2em",
+      color: "#2a4060",
+      textTransform: "uppercase",
+      marginBottom: "10px",
+      paddingBottom: "6px",
+      borderBottom: "1px solid rgba(255,255,255,0.04)",
+    },
+    filterBtn: (active, hue) => ({
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      padding: "6px 10px",
+      borderRadius: "6px",
+      background: active ? `${hsl(hue,60,55)}15` : "transparent",
+      border: active ? `1px solid ${hsl(hue,60,55)}40` : "1px solid transparent",
+      color: active ? hsl(hue, 60, 70) : "#3a5070",
+      fontSize: "10px",
+      cursor: "pointer",
+      marginBottom: "2px",
+      transition: "all 0.12s",
+      letterSpacing: "0.04em",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    }),
+    progressRing: {
+      textAlign: "center",
+      padding: "10px 0",
+    },
+    mainCard: {
+      background: "#0d1220",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: "12px",
+      overflow: "hidden",
+    },
+    cardHeader: {
+      padding: "16px 20px",
+      borderBottom: "1px solid rgba(255,255,255,0.04)",
+      background: `linear-gradient(135deg, ${hsl(hue,40,8)}, #0d1220)`,
+      transition: "background 0.4s",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    metaRow: {
+      display: "flex",
+      gap: "8px",
+      alignItems: "center",
+      flexWrap: "wrap",
+    },
+    chip: (h, sat=60, lit=55) => ({
+      padding: "3px 9px",
+      borderRadius: "20px",
+      background: `${hsl(h,sat,lit)}15`,
+      border: `1px solid ${hsl(h,sat,lit)}35`,
+      color: hsl(h, sat, 70),
+      fontSize: "9px",
+      fontWeight: "700",
+      letterSpacing: "0.12em",
+      textTransform: "uppercase",
+    }),
+    diffChip: (d) => {
+      const map = { Easy: [140,65], Medium: [45,70], Hard: [0,65] };
+      const [h,s] = map[d] || [200,60];
+      return {
+        padding: "3px 9px",
+        borderRadius: "20px",
+        background: `${hsl(h,s,55)}15`,
+        border: `1px solid ${hsl(h,s,55)}35`,
+        color: hsl(h, s, 65),
+        fontSize: "9px",
+        fontWeight: "700",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+      };
+    },
+    flagBtn: (active) => ({
+      padding: "5px 10px",
+      borderRadius: "6px",
+      background: active ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.03)",
+      border: active ? "1px solid rgba(245,158,11,0.35)" : "1px solid rgba(255,255,255,0.06)",
+      color: active ? "#f59e0b" : "#2a4060",
+      fontSize: "11px",
+      cursor: "pointer",
+      transition: "all 0.15s",
+    }),
+    qCounter: {
+      fontSize: "9px",
+      color: "#2a4060",
+      letterSpacing: "0.1em",
+      marginBottom: "4px",
+    },
+    qText: {
+      fontSize: "15px",
+      lineHeight: "1.65",
+      color: "#d0dff0",
+      padding: "18px 20px 12px",
+      fontFamily: "'Georgia', 'Times New Roman', serif",
+      fontWeight: "400",
+    },
+    optWrap: { padding: "4px 20px 18px" },
+    opt: (idx, selected, revealed, correct) => {
+      let bg = "rgba(255,255,255,0.02)";
+      let border = "rgba(255,255,255,0.06)";
+      let color = "#6080a0";
+      let glow = "none";
+      if (!revealed && selected === idx) {
+        bg = `${hsl(hue,60,55)}10`;
+        border = `${hsl(hue,60,55)}50`;
+        color = "#d0dff0";
+      }
+      if (revealed) {
+        if (idx === correct) {
+          bg = "rgba(34,197,94,0.08)";
+          border = "rgba(34,197,94,0.4)";
+          color = "#86efac";
+          glow = "0 0 12px rgba(34,197,94,0.1)";
+        } else if (idx === selected) {
+          bg = "rgba(239,68,68,0.08)";
+          border = "rgba(239,68,68,0.4)";
+          color = "#fca5a5";
+        }
+      }
+      return {
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "12px",
+        padding: "13px 15px",
+        borderRadius: "8px",
+        border: `1px solid ${border}`,
+        background: bg,
+        color,
+        cursor: revealed ? "default" : "pointer",
+        marginBottom: "7px",
+        transition: "all 0.15s",
+        lineHeight: "1.55",
+        boxShadow: glow,
+        fontFamily: "'Georgia', serif",
+        fontSize: "13px",
+      };
+    },
+    badge: (idx, selected, revealed, correct) => {
+      let bg = "rgba(255,255,255,0.05)";
+      let color = "#2a4060";
+      if (!revealed && selected === idx) { bg = `${hsl(hue,60,55)}25`; color = hsl(hue,60,70); }
+      if (revealed) {
+        if (idx === correct) { bg = "rgba(34,197,94,0.25)"; color = "#22c55e"; }
+        else if (idx === selected) { bg = "rgba(239,68,68,0.2)"; color = "#ef4444"; }
+      }
+      return {
+        minWidth: "24px", height: "24px",
+        borderRadius: "5px",
+        background: bg, color,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "10px", fontWeight: "700",
+        marginTop: "1px", flexShrink: 0,
+      };
+    },
+    expBox: {
+      margin: "0 20px 18px",
+      padding: "16px",
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "8px",
+      borderLeft: `3px solid ${hsl(hue,60,55)}`,
+      transition: "border-left-color 0.4s",
+    },
+    expTitle: {
+      fontSize: "9px",
+      letterSpacing: "0.2em",
+      color: hsl(hue, 60, 60),
+      textTransform: "uppercase",
+      marginBottom: "10px",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+    },
+    expText: {
+      fontSize: "12.5px",
+      lineHeight: "1.75",
+      color: "#7090b0",
+      fontFamily: "'Georgia', serif",
+    },
+    refBadge: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "5px",
+      marginTop: "10px",
+      padding: "4px 10px",
+      background: "rgba(255,255,255,0.03)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "4px",
+      fontSize: "9px",
+      color: "#2a4060",
+      letterSpacing: "0.05em",
+    },
+    footer: {
+      padding: "14px 20px",
+      borderTop: "1px solid rgba(255,255,255,0.04)",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "10px",
+    },
+    navGroup: { display: "flex", gap: "8px" },
+    btnNav: (disabled) => ({
+      padding: "8px 16px",
+      borderRadius: "7px",
+      background: disabled ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.07)",
+      color: disabled ? "#1a3050" : "#5080a0",
+      fontSize: "11px",
+      fontWeight: "600",
+      cursor: disabled ? "not-allowed" : "pointer",
+      letterSpacing: "0.06em",
+      transition: "all 0.12s",
+    }),
+    btnSubmit: (disabled) => ({
+      padding: "9px 24px",
+      borderRadius: "7px",
+      background: disabled ? "rgba(255,255,255,0.03)" : `linear-gradient(135deg, ${hsl(hue,65,50)}, ${hsl(hue+20,60,40)})`,
+      border: "none",
+      color: disabled ? "#1a3050" : "#fff",
+      fontSize: "11px",
+      fontWeight: "700",
+      cursor: disabled ? "not-allowed" : "pointer",
+      letterSpacing: "0.12em",
+      textTransform: "uppercase",
+      transition: "all 0.2s",
+      opacity: disabled ? 0.5 : 1,
+    }),
+    // Question map
+    mapGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(5, 1fr)",
+      gap: "5px",
+      padding: "16px 20px",
+    },
+    mapBtn: (id, current_id) => {
+      const ans = answers[id];
+      const question = ALL_QUESTIONS.find(q => q.id === id);
+      const isCorrect = ans !== undefined && question && question.correct === ans;
+      const isCurrent = id === current_id;
+      const isFlagged = flagged.has(id);
+      return {
+        aspectRatio: "1",
+        borderRadius: "6px",
+        border: isCurrent ? `2px solid ${hsl(hue,60,55)}` : "1px solid rgba(255,255,255,0.06)",
+        background: ans !== undefined
+          ? (isCorrect ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)")
+          : isFlagged ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.03)",
+        color: isCurrent ? hsl(hue,60,70) : ans !== undefined ? (isCorrect ? "#22c55e" : "#ef4444") : "#2a4060",
+        fontSize: "10px",
+        fontWeight: "700",
+        cursor: "pointer",
+        border: isCurrent ? `2px solid ${hsl(hue,60,55)}` : "1px solid rgba(255,255,255,0.06)",
+        transition: "all 0.1s",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      };
+    },
+    // Results
+    resultsWrap: { padding: "24px 20px" },
+    resultStat: {
+      background: "rgba(255,255,255,0.03)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "10px",
+      padding: "16px",
+      textAlign: "center",
+    },
+    resultStatVal: (c) => ({ fontSize: "32px", fontWeight: "700", color: c, lineHeight: 1 }),
+    resultStatLbl: { fontSize: "9px", color: "#2a4060", letterSpacing: "0.15em", marginTop: "4px" },
+  };
+
+  if (!q) return <div style={S.root}><div style={{ padding: "40px", textAlign: "center", color: "#2a4060" }}>No questions match the selected filters.</div></div>;
+
+  const answeredIdx = answers[q.id];
+
+  // ── RESULTS TAB ──
+  if (tab === "results") {
+    const byDomain = {};
+    ALL_QUESTIONS.forEach(qs => {
+      if (!byDomain[qs.domain]) byDomain[qs.domain] = { total: 0, correct: 0 };
+      byDomain[qs.domain].total++;
+      if (answers[qs.id] === qs.correct) byDomain[qs.domain].correct++;
+    });
+    const overallPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+    const grade = overallPct >= 80 ? { label: "PASSING", color: "#22c55e" } : overallPct >= 65 ? { label: "BORDERLINE", color: "#f59e0b" } : { label: "NEEDS WORK", color: "#ef4444" };
+    return (
+      <div style={S.root}>
+        <style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');</style>
+        <div style={S.topBar}>
+          <div style={S.brand}><div style={S.brandIcon}>⬡</div><div><div style={S.brandText}>CMMC CPC Exam</div><div style={S.brandSub}>Certified CMMC Professional</div></div></div>
+          <div style={S.tabs}>{["test","map","results"].map(t => <button key={t} style={S.tab(tab===t)} onClick={() => setTab(t)}>{t}</button>)}</div>
+        </div>
+        <div style={{ maxWidth: "900px", margin: "30px auto", padding: "0 20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "24px" }}>
+            {[
+              { val: totalAnswered, lbl: "Attempted", color: "#5080a0" },
+              { val: totalCorrect, lbl: "Correct", color: "#22c55e" },
+              { val: totalAnswered - totalCorrect, lbl: "Incorrect", color: "#ef4444" },
+              { val: `${overallPct}%`, lbl: grade.label, color: grade.color },
+            ].map((s,i) => (
+              <div key={i} style={S.resultStat}>
+                <div style={S.resultStatVal(s.color)}>{s.val}</div>
+                <div style={S.resultStatLbl}>{s.lbl}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: "#0d1220", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px", padding: "20px" }}>
+            <div style={{ ...S.sideLabel, marginBottom: "14px" }}>Performance by Domain</div>
+            {Object.entries(byDomain).map(([domain, { total, correct }]) => {
+              const h = DOMAIN_HUE[domain] || 200;
+              const p = Math.round((correct / total) * 100);
+              const answered = Object.keys(answers).filter(id => ALL_QUESTIONS.find(q => q.id === parseInt(id))?.domain === domain).length;
+              return (
+                <div key={domain} style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "11px", color: "#7090b0" }}>{domain}</span>
+                    <span style={{ fontSize: "11px", color: answered === 0 ? "#2a4060" : p >= 70 ? "#22c55e" : "#ef4444" }}>
+                      {answered === 0 ? "—" : `${correct}/${answered}`}
+                    </span>
+                  </div>
+                  <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px" }}>
+                    {answered > 0 && <div style={{ height: "100%", width: `${p}%`, background: p >= 70 ? "#22c55e" : p >= 50 ? "#f59e0b" : "#ef4444", borderRadius: "2px", transition: "width 0.5s" }} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ textAlign: "center", marginTop: "20px" }}>
+            <button style={{ ...S.btnSubmit(false), padding: "11px 30px" }} onClick={() => { setTab("test"); goTo(0); }}>← Back to Test</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MAP TAB ──
+  if (tab === "map") {
+    return (
+      <div style={S.root}>
+        <style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');</style>
+        <div style={S.topBar}>
+          <div style={S.brand}><div style={S.brandIcon}>⬡</div><div><div style={S.brandText}>CMMC CPC Exam</div><div style={S.brandSub}>Certified CMMC Professional</div></div></div>
+          <div style={S.tabs}>{["test","map","results"].map(t => <button key={t} style={S.tab(tab===t)} onClick={() => setTab(t)}>{t}</button>)}</div>
+        </div>
+        <div style={{ maxWidth: "900px", margin: "24px auto", padding: "0 20px" }}>
+          <div style={{ background: "#0d1220", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px", padding: "20px", marginBottom: "16px" }}>
+            <div style={S.sideLabel}>All 25 Questions</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
+              {ALL_QUESTIONS.map((question, i) => {
+                const ans = answers[question.id];
+                const isCorrect = ans !== undefined && question.correct === ans;
+                const isFlagged = flagged.has(question.id);
+                const dh = DOMAIN_HUE[question.domain] || 200;
+                return (
+                  <div key={question.id}
+                    onClick={() => { setTab("test"); setDomainFilter("All Domains"); const idx = filtered.findIndex(q => q.id === question.id); if (idx >= 0) goTo(idx); else { setDomainFilter("All Domains"); setTimeout(() => { const idx2 = ALL_QUESTIONS.findIndex(q => q.id === question.id); goTo(idx2); setTab("test"); }, 50); } }}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "8px",
+                      border: ans !== undefined ? `1px solid ${isCorrect ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}` : isFlagged ? "1px solid rgba(245,158,11,0.25)" : "1px solid rgba(255,255,255,0.05)",
+                      background: ans !== undefined ? (isCorrect ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)") : "rgba(255,255,255,0.02)",
+                      cursor: "pointer",
+                    }}>
+                    <div style={{ fontSize: "9px", color: "#2a4060", marginBottom: "3px" }}>Q{question.id} · {question.difficulty}</div>
+                    <div style={{ fontSize: "10px", color: ans !== undefined ? (isCorrect ? "#22c55e" : "#ef4444") : isFlagged ? "#f59e0b" : hsl(dh,50,60), letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{question.domain}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center", fontSize: "10px", color: "#2a4060" }}>
+            {[["rgba(34,197,94,0.3)","Correct"],["rgba(239,68,68,0.3)","Incorrect"],["rgba(245,158,11,0.25)","Flagged"],["rgba(255,255,255,0.05)","Not Attempted"]].map(([c,l]) => (
+              <span key={l} style={{ display: "flex", alignItems: "center", gap: "5px" }}><span style={{ width: "10px", height: "10px", borderRadius: "2px", border: `1px solid ${c}`, display: "inline-block" }} />{l}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── TEST TAB ──
+  return (
+    <div style={S.root} ref={topRef}>
+      <style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');</style>
+      <div style={S.topBar}>
+        <div style={S.brand}>
+          <div style={S.brandIcon}>⬡</div>
+          <div>
+            <div style={S.brandText}>CMMC CPC Exam</div>
+            <div style={S.brandSub}>Certified CMMC Professional · v2.0</div>
+          </div>
+        </div>
+        <div style={S.tabs}>{["test","map","results"].map(t => <button key={t} style={S.tab(tab===t)} onClick={() => setTab(t)}>{t}</button>)}</div>
+        <div style={S.scoreBar}>
+          {[
+            { val: `${totalCorrect}/${totalAnswered}`, lbl: "Score", c: pct === null ? "#2a4060" : pct >= 70 ? "#22c55e" : "#ef4444" },
+            { val: pct === null ? "—" : `${pct}%`, lbl: "Pass Rate", c: pct === null ? "#2a4060" : pct >= 70 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444" },
+            { val: flagged.size, lbl: "Flagged", c: flagged.size > 0 ? "#f59e0b" : "#2a4060" },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              {i > 0 && <div style={S.divider} />}
+              <div style={S.scoreItem}>
+                <div style={S.scoreVal(s.c)}>{s.val}</div>
+                <div style={S.scoreLbl}>{s.lbl}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={S.body}>
+        {/* Sidebar */}
+        <div style={S.sidebar}>
+          <div style={S.sideSection}>
+            <div style={S.sideLabel}>Domain Filter</div>
+            {DOMAINS.map(d => (
+              <button key={d} style={S.filterBtn(domainFilter === d, d === "All Domains" ? 200 : DOMAIN_HUE[d] || 200)} onClick={() => setDomainFilter(d)}>
+                {d}
+              </button>
+            ))}
+          </div>
+          <div style={S.sideSection}>
+            <div style={S.sideLabel}>Difficulty</div>
+            {DIFFICULTIES.map(d => {
+              const dh = { Easy: 140, Medium: 45, Hard: 0, "All Levels": 200 }[d] || 200;
+              return <button key={d} style={S.filterBtn(diffFilter === d, dh)} onClick={() => setDiffFilter(d)}>{d}</button>;
+            })}
+          </div>
+          <div style={S.sideSection}>
+            <div style={S.sideLabel}>Question Navigator</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "4px" }}>
+              {filtered.map((fq, i) => (
+                <button key={fq.id} style={S.mapBtn(fq.id, q.id)} onClick={() => goTo(i)}>
+                  {fq.id}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "9px" }}>
+              {[["#22c55e","Correct"],["#ef4444","Wrong"],["#f59e0b","Flagged"]].map(([c,l]) => (
+                <span key={l} style={{ color: "#2a4060", display: "flex", alignItems: "center", gap: "5px" }}><span style={{ color: c }}>■</span>{l}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main */}
+        <div>
+          {/* Progress bar */}
+          <div style={{ height: "3px", background: "rgba(255,255,255,0.04)", borderRadius: "2px", marginBottom: "14px", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${((qIndex + 1) / filtered.length) * 100}%`, background: `linear-gradient(90deg, ${hsl(hue,65,50)}, ${hsl(hue+20,60,45)})`, borderRadius: "2px", transition: "width 0.3s, background 0.4s" }} />
+          </div>
+
+          <div style={S.mainCard}>
+            {/* Card header */}
+            <div style={S.cardHeader}>
+              <div>
+                <div style={S.qCounter}>QUESTION {qIndex + 1} OF {filtered.length} · ID #{q.id}</div>
+                <div style={S.metaRow}>
+                  <span style={S.chip(hue)}>{q.domain}</span>
+                  <span style={S.diffChip(q.difficulty)}>{q.difficulty}</span>
+                  <span style={{ ...S.chip(0,0,50), background: "rgba(255,255,255,0.04)", color: "#3a5070" }}>CMMC {q.level}</span>
+                  {answers[q.id] !== undefined && (
+                    <span style={S.chip(answers[q.id] === q.correct ? 140 : 0, 65)}>
+                      {answers[q.id] === q.correct ? "✓ CORRECT" : "✗ INCORRECT"}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button style={S.flagBtn(flagged.has(q.id))} onClick={toggleFlag}>
+                {flagged.has(q.id) ? "★" : "☆"}
+              </button>
+            </div>
+
+            {/* Question */}
+            <div style={S.qText}>{q.question}</div>
+
+            {/* Options */}
+            <div style={S.optWrap}>
+              {q.options.map((opt, idx) => (
+                <div key={idx} style={S.opt(idx, selected, revealed, q.correct)} onClick={() => handleSelect(idx)}>
+                  <div style={S.badge(idx, selected, revealed, q.correct)}>
+                    {revealed && idx === q.correct ? "✓" : revealed && idx === selected && idx !== q.correct ? "✗" : String.fromCharCode(65 + idx)}
+                  </div>
+                  <span>{opt}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Explanation */}
+            {revealed && (
+              <div style={S.expBox}>
+                <div style={S.expTitle}>
+                  <span>▸</span> Technical Explanation
+                </div>
+                <div style={S.expText}>{q.explanation}</div>
+                <div style={S.refBadge}>
+                  <span>📎</span>
+                  <span>{q.ref}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={S.footer}>
+              <div style={S.navGroup}>
+                <button style={S.btnNav(qIndex === 0)} onClick={handlePrev} disabled={qIndex === 0}>← Prev</button>
+                <button style={S.btnNav(qIndex === filtered.length - 1)} onClick={handleNext} disabled={qIndex === filtered.length - 1}>Next →</button>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <span style={{ fontSize: "10px", color: "#1a3050" }}>{qIndex + 1} / {filtered.length}</span>
+                {!revealed
+                  ? <button style={S.btnSubmit(selected === null)} onClick={handleSubmit} disabled={selected === null}>Submit Answer</button>
+                  : <button style={S.btnSubmit(qIndex === filtered.length - 1)} onClick={handleNext} disabled={qIndex === filtered.length - 1}>Next →</button>
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* Running score */}
+          {totalAnswered > 0 && (
+            <div style={{ marginTop: "12px", background: "#0d1220", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "16px" }}>
+              <div>
+                <div style={{ fontSize: "9px", color: "#2a4060", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "2px" }}>Running Score</div>
+                <div style={{ fontSize: "22px", fontWeight: "700", color: pct >= 70 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444" }}>{pct}%</div>
+              </div>
+              <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: pct >= 70 ? "linear-gradient(90deg,#22c55e,#16a34a)" : pct >= 50 ? "linear-gradient(90deg,#f59e0b,#d97706)" : "linear-gradient(90deg,#ef4444,#dc2626)", borderRadius: "3px", transition: "width 0.4s" }} />
+              </div>
+              <div style={{ fontSize: "11px", color: "#3a5070", textAlign: "right" }}>
+                <div>{totalCorrect} correct</div>
+                <div style={{ color: "#1a3050" }}>{totalAnswered - totalCorrect} wrong</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

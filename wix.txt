@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #050b12;
+    color: #e8f4f8;
+    font-family: 'Rajdhani', sans-serif;
+    padding: 70px 40px;
+  }
+
+  /* Ambient glow */
+  body::before {
+    content:'';
+    position:fixed;
+    top:-200px; right:-200px;
+    width:600px; height:600px;
+    background:radial-gradient(circle, rgba(0,245,255,0.04) 0%, transparent 60%);
+    pointer-events:none;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 56px;
+    opacity:0;
+    animation: fadeUp .9s ease .1s forwards;
+  }
+
+  .section-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 5px;
+    color: #00f5ff;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: .7;
+  }
+
+  h2 {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: clamp(24px, 4vw, 44px);
+    text-transform: uppercase;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  h2 em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px #00f5ff;
+  }
+
+  .section-desc {
+    font-size: 16px;
+    color: #7a9bb0;
+    line-height: 1.75;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+    max-width: 1160px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #0d1e2e;
+    border: 1px solid rgba(0,245,255,.05);
+    padding: 38px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: all .4s;
+    opacity:0;
+    animation: fadeUp .8s ease forwards;
+    cursor: default;
+  }
+
+  .card:nth-child(1){animation-delay:.05s}
+  .card:nth-child(2){animation-delay:.12s}
+  .card:nth-child(3){animation-delay:.19s}
+  .card:nth-child(4){animation-delay:.26s}
+  .card:nth-child(5){animation-delay:.33s}
+  .card:nth-child(6){animation-delay:.40s}
+
+  /* Top sweep line */
+  .card::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:2px;
+    background:linear-gradient(90deg, transparent, #00f5ff, transparent);
+    transform:scaleX(0);
+    transition:transform .5s;
+  }
+  /* Inner glow */
+  .card::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg, rgba(0,245,255,.03) 0%, transparent 60%);
+    opacity:0;
+    transition:opacity .4s;
+  }
+
+  .card:hover {
+    transform:translateY(-5px);
+    border-color:rgba(0,245,255,.22);
+    box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 40px rgba(0,245,255,.05);
+  }
+  .card:hover::before { transform:scaleX(1); }
+  .card:hover::after  { opacity:1; }
+
+  .card-num {
+    position:absolute;
+    top:18px; right:22px;
+    font-family:'Orbitron',monospace;
+    font-size:11px;
+    color:rgba(0,245,255,.12);
+    font-weight:700;
+    letter-spacing:1px;
+  }
+
+  .card-icon {
+    font-size:30px;
+    margin-bottom:20px;
+    display:block;
+    filter:drop-shadow(0 0 10px rgba(0,245,255,.35));
+  }
+
+  .card-title {
+    font-family:'Orbitron',monospace;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#e8f4f8;
+    margin-bottom:14px;
+    line-height:1.4;
+  }
+
+  .card-desc {
+    font-size:14px;
+    color:#7a9bb0;
+    line-height:1.75;
+    font-weight:400;
+  }
+
+  .tags {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:22px;
+  }
+  .tag {
+    font-family:'Share Tech Mono',monospace;
+    font-size:8px;
+    letter-spacing:1.5px;
+    padding:3px 9px;
+    border:1px solid rgba(0,245,255,.14);
+    color:rgba(0,245,255,.45);
+    text-transform:uppercase;
+  }
+
+  /* Certifications strip */
+  .certs {
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:52px;
+    padding-top:40px;
+    border-top:1px solid rgba(0,245,255,.07);
+    opacity:0;
+    animation:fadeUp .8s ease .5s forwards;
+  }
+  .cert-badge {
+    font-family:'Share Tech Mono',monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    padding:8px 18px;
+    border:1px solid rgba(255,215,0,.2);
+    color:rgba(255,215,0,.6);
+    text-transform:uppercase;
+    background:rgba(255,215,0,.03);
+    transition:all .3s;
+  }
+  .cert-badge:hover {
+    border-color:rgba(255,215,0,.5);
+    color:#ffd700;
+    background:rgba(255,215,0,.06);
+  }
+
+  @keyframes fadeUp {
+    from{opacity:0;transform:translateY(28px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+
+  @media(max-width:600px){
+    body{padding:50px 20px;}
+    .grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="section-header">
+  <div class="section-tag">// Core Capabilities</div>
+  <h2>Full-Spectrum <em>Security</em> Solutions</h2>
+  <p class="section-desc">Enterprise-grade cybersecurity tailored for government agencies and mission-critical environments.</p>
+</div>
+
+<div class="grid">
+
+  <div class="card">
+    <span class="card-num">01</span>
+    <span class="card-icon">🛡️</span>
+    <div class="card-title">GRC Compliance</div>
+    <p class="card-desc">Navigate NIST 800-53, FedRAMP, FISMA, and DFARS. Custom control assessments, policy development, and risk management frameworks built for your mission environment.</p>
+    <div class="tags">
+      <span class="tag">NIST 800-53</span>
+      <span class="tag">FedRAMP</span>
+      <span class="tag">FISMA</span>
+      <span class="tag">DFARS</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">02</span>
+    <span class="card-icon">⚡</span>
+    <div class="card-title">Incident Response</div>
+    <p class="card-desc">Rapid threat containment, forensic investigation, and root cause analysis. Custom playbooks, federal-standard post-incident reporting, and simulation exercises.</p>
+    <div class="tags">
+      <span class="tag">Threat Containment</span>
+      <span class="tag">Forensics</span>
+      <span class="tag">Playbooks</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">03</span>
+    <span class="card-icon">☁️</span>
+    <div class="card-title">Azure Cloud Architecture</div>
+    <p class="card-desc">Secure, scalable Azure environments for mission-critical workloads. Hybrid cloud integration, Zero Trust identity models, and FedRAMP-compliant infrastructure.</p>
+    <div class="tags">
+      <span class="tag">Zero Trust</span>
+      <span class="tag">Azure</span>
+      <span class="tag">AWS</span>
+      <span class="tag">DevSecOps</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">04</span>
+    <span class="card-icon">🔍</span>
+    <div class="card-title">Vulnerability Assessment</div>
+    <p class="card-desc">Penetration testing and continuous scanning to surface weaknesses before adversaries do. Prioritized remediation plans aligned with your risk tolerance.</p>
+    <div class="tags">
+      <span class="tag">Pen Testing</span>
+      <span class="tag">CVE Analysis</span>
+      <span class="tag">Red Team</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">05</span>
+    <span class="card-icon">🔐</span>
+    <div class="card-title">Zero Trust Architecture</div>
+    <p class="card-desc">Eliminate implicit trust, enforce least-privilege access, and continuously verify every identity — across networks, clouds, and endpoints.</p>
+    <div class="tags">
+      <span class="tag">IAM</span>
+      <span class="tag">Micro-Segmentation</span>
+      <span class="tag">MFA</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">06</span>
+    <span class="card-icon">🧠</span>
+    <div class="card-title">Intelligence Ops Support</div>
+    <p class="card-desc">Counterintelligence operations support rooted in real-world experience. Supply chain risk management, threat intelligence fusion, and strategic security advisory.</p>
+    <div class="tags">
+      <span class="tag">Counterintelligence</span>
+      <span class="tag">SCRM</span>
+      <span class="tag">Threat Intel</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Certifications -->
+<div class="certs">
+  <span class="cert-badge">CISSP</span>
+  <span class="cert-badge">PMP</span>
+  <span class="cert-badge">CEH</span>
+  <span class="cert-badge">Azure Solutions Architect</span>
+  <span class="cert-badge">Secret Clearance</span>
+  <span class="cert-badge">CAGE: 98EG4</span>
+  <span class="cert-badge">NAICS: 541511</span>
+</div>
+
+</body>
+</html>

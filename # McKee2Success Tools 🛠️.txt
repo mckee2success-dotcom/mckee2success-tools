@@ -1,0 +1,170 @@
+# McKee2Success Tools 🛠️
+
+**McKee2Success LLC** | Minority-Owned Small Disadvantaged Business  
+📍 Upper Marlboro, MD | CAGE: 98EG4 | NAICS: 541511  
+📧 mckee2success@gmail.com | 🌐 [mckee2success.com](https://mckee2success.com)
+
+---
+
+## Overview
+
+This repository contains internal automation tools, scripts, and web components built to support McKee2Success LLC operations across three core areas:
+
+- **Job Search Automation** — Gmail-integrated scanning, classification, and cover letter generation
+- **Government Contracting (GovCon)** — RFP analysis, subcontractor outreach, bid pricing workflows
+- **Business Web Presence** — Wix iframe embeds, animations, and UI components for mckee2success.com
+
+---
+
+## Repository Structure
+
+```
+mckee2success-tools/
+│
+├── job-search/
+│   ├── gmail-job-scanner.js          # Scans Gmail inbox for job requisitions
+│   ├── job-classifier.js             # AI-powered role classification
+│   ├── cover-letter-generator.js     # Auto-generates tailored cover letters
+│   └── README.md
+│
+├── govcon/
+│   ├── rfp-analyzer.html             # RFP analysis tool (Claude-powered)
+│   ├── subcontractor-outreach.js     # Gmail MCP-based outreach automation
+│   ├── bid-pricing-tool.html         # GovCon bid pricing calculator
+│   ├── middleman-sop.md              # Internal SOPs for GovCon middleman workflow
+│   └── README.md
+│
+├── email-digest/
+│   ├── digest-script.gs              # Google Apps Script — inbox digest every 3 days
+│   └── README.md
+│
+├── website/
+│   ├── matrix-rain.html              # Matrix rain animation (Wix iframe embed)
+│   ├── glassmorphism-cards.html      # Service cards with glassmorphism styling
+│   ├── hero-section.html             # Futuristic dark-mode hero section
+│   └── README.md
+│
+├── certifications/
+│   ├── cmmc-practice-test.jsx        # CMMC 2.0 / NIST SP 800-171 React practice test
+│   └── README.md
+│
+├── .gitignore
+├── .env.example
+└── README.md                         ← You are here
+```
+
+---
+
+## Tools Summary
+
+### 🔍 Job Search Automation
+
+| Tool | Description | Tech |
+|------|-------------|------|
+| `gmail-job-scanner.js` | Connects to Gmail, scans for job requisitions from recruiters | Gmail MCP, Node.js |
+| `job-classifier.js` | Classifies roles by type, seniority, and match to resume | Claude API |
+| `cover-letter-generator.js` | Generates tailored cover letters saved as Gmail drafts | Claude API, Gmail MCP |
+
+**Target Roles:** Senior Cybersecurity Engineer, ISSO, CISO, Security Architect, PM  
+**Active Leads:** Quzara LLC, VT Group, BryceTech, DLA Piper
+
+---
+
+### 🏛️ Government Contracting (GovCon)
+
+| Tool | Description | Tech |
+|------|-------------|------|
+| `rfp-analyzer.html` | Analyzes RFPs for fit, red flags, and bid/no-bid scoring | Claude API |
+| `subcontractor-outreach.js` | Automates outreach emails to potential subs via Gmail | Gmail MCP |
+| `bid-pricing-tool.html` | Estimates labor categories, rates, and total bid pricing | JavaScript |
+
+**Federal Clients:** U.S. Navy, Dept. of State, FDIC, Dept. of Labor, SEC, U.S. Army
+
+---
+
+### 📧 Email Digest
+
+| Tool | Description | Tech |
+|------|-------------|------|
+| `digest-script.gs` | Summarizes Gmail inbox every 3 days, delivered at 7:30 AM | Google Apps Script |
+
+**Setup:** Deploy in Google Apps Script → Set trigger: time-driven, every 3 days
+
+---
+
+### 🌐 Website Components
+
+| Component | Description | Usage |
+|-----------|-------------|-------|
+| `matrix-rain.html` | Animated matrix rain background | Wix iframe embed |
+| `glassmorphism-cards.html` | Frosted glass service cards | Wix iframe embed |
+| `hero-section.html` | Full futuristic dark-mode hero | Wix iframe embed |
+
+**Hosted on:** Wix (mckee2success.com) — embedded via HTML iFrame widget
+
+---
+
+### 📝 Certifications / Practice Tests
+
+| Tool | Description | Tech |
+|------|-------------|------|
+| `cmmc-practice-test.jsx` | Interactive CMMC 2.0 practice test covering all NIST SP 800-171 domains | React |
+
+---
+
+## Environment Setup
+
+Never commit API keys. Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+**`.env.example`:**
+```
+ANTHROPIC_API_KEY=your_key_here
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+```
+
+---
+
+## Quick Start
+
+### Node.js Tools
+```bash
+npm install
+node job-search/gmail-job-scanner.js
+```
+
+### Google Apps Script (Email Digest)
+1. Go to [script.google.com](https://script.google.com)
+2. Paste contents of `email-digest/digest-script.gs`
+3. Set trigger: Time-driven → Every 3 days → 7:30 AM
+
+### React Components
+```bash
+npx create-react-app cmmc-test
+cp certifications/cmmc-practice-test.jsx src/App.jsx
+npm start
+```
+
+---
+
+## Business Info
+
+| Field | Detail |
+|-------|--------|
+| Entity | McKee2Success LLC |
+| Type | Minority-Owned SDB |
+| CAGE Code | 98EG4 |
+| NAICS | 541511 (Custom Computer Programming) |
+| Clearance | Secret (Active) |
+| Certifications | CISSP, PMP, CEH, Microsoft Azure Solutions Architect Expert |
+| Location | Upper Marlboro, MD (DC Metro Area) |
+
+---
+
+## License
+
+Proprietary — All rights reserved. McKee2Success LLC © 2025
