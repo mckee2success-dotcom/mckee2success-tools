@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Certifications | McKee2Success</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --accent: #ce93d8; --accent-dim: rgba(206,147,216,0.1); --accent-border: rgba(206,147,216,0.3); --green: #00FF41; --bg: #050a05; --surface: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07); --text: #e2e8e2; --text-muted: #6b7c6b; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    body::before { content: ''; position: fixed; top: -20%; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, var(--accent-dim) 0%, transparent 70%); pointer-events: none; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 48px; text-align: center; max-width: 480px; width: 100%; position: relative; }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 16px 16px 0 0; }
+    .icon { font-size: 48px; margin-bottom: 20px; }
+    .tag { display: inline-flex; align-items: center; background: var(--accent-dim); border: 1px solid var(--accent-border); border-radius: 20px; padding: 5px 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 12px; }
+    p { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 28px; }
+    .tools-list { background: var(--accent-dim); border: 1px solid var(--accent-border); border-radius: 10px; padding: 20px; margin-bottom: 32px; text-align: left; }
+    .tools-list h3 { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+    .tool-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+    .tool-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .badge { display: inline-block; background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2); border-radius: 20px; padding: 5px 14px; font-size: 11px; color: var(--green); font-family: 'JetBrains Mono', monospace; margin-bottom: 28px; }
+    .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--green); text-decoration: none; font-size: 13px; font-family: 'JetBrains Mono', monospace; transition: gap 0.2s; }
+    .back-link:hover { gap: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📝</div>
+    <div class="tag">Certifications</div>
+    <h1>Certification Practice Tests</h1>
+    <p>Interactive study tools built for active prep toward CMMC CPC, CISSP, and other professional credentials.</p>
+    <div class="tools-list">
+      <h3>// Tests in this suite</h3>
+      <div class="tool-item"><span class="dot"></span>CMMC 2.0 — All 110 NIST SP 800-171 practices</div>
+      <div class="tool-item"><span class="dot"></span>14 domains · Timed quiz mode · Domain scoring</div>
+      <div class="tool-item"><span class="dot"></span>CISSP Practice Test — Coming soon</div>
+      <div class="tool-item"><span class="dot"></span>Azure AZ-305 Quiz — Coming soon</div>
+    </div>
+    <div class="badge">🚧 Tools deploying soon</div>
+    <br/><br/>
+    <a class="back-link" href="/">← Back to All Tools</a>
+  </div>
+</body>
+</html>
